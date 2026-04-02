@@ -4,11 +4,11 @@ import { concat } from "@ember/helper";
 import { action } from "@ember/object";
 import didInsert from "@ember/render-modifiers/modifiers/did-insert";
 import { service } from "@ember/service";
+import { trustHTML } from "@ember/template";
 import { and, not } from "truth-helpers";
 import DButton from "discourse/components/d-button";
 import concatClass from "discourse/helpers/concat-class";
 import icon from "discourse/helpers/d-icon";
-import htmlSafe from "discourse/helpers/html-safe";
 import getURL from "discourse/lib/get-url";
 import { emojiUnescape } from "discourse/lib/text";
 import { defaultHomepage } from "discourse/lib/utilities";
@@ -180,7 +180,7 @@ export default class FeaturedHomepageTopics extends Component {
                   <div class="featured-topic">
                     <div
                       class="featured-topic-image"
-                      style={{htmlSafe
+                      style={{trustHTML
                         (concat "background-image: url(" t.image_url ")")
                       }}
                     >
@@ -194,7 +194,7 @@ export default class FeaturedHomepageTopics extends Component {
                         aria-level="2"
                         data-topic-id={{t.id}}
                       >
-                        {{htmlSafe (this.emojiTitle t.fancy_title)}}
+                        {{trustHTML (this.emojiTitle t.fancy_title)}}
                       </a>
                     </h3>
                   </div>
