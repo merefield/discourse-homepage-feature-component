@@ -5,7 +5,7 @@ html.homepage-featured-topics {
 }
 
 .featured-topic-wrapper {
-  margin-bottom: 3em;
+  margin-bottom: 1em;
   text-align: center;
   border-bottom: 1px solid var(--primary-low);
   position: relative;
@@ -30,7 +30,7 @@ html.homepage-featured-topics {
   h2 {
     border-bottom: 1px solid var(--primary-low);
     padding-bottom: 0.5em;
-    margin-bottom: 1.5em;
+    margin-bottom: 1em;
   }
 
   .featured-topics {
@@ -104,17 +104,18 @@ html.homepage-featured-topics {
         padding: 0.5em 1em 1em 1em;
 
         a {
+          color: var(--primary);
           display: -webkit-box;
           overflow: hidden;
           text-overflow: ellipsis;
-          word-wrap: break-word;
+          overflow-wrap: break-word;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
         }
       }
 
       .featured-topic-image {
-        height: 200px;
+        aspect-ratio: 32 / 9;
         max-width: 450px;
         width: 100%;
         background-size: cover;
