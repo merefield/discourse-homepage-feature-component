@@ -1,3 +1,5 @@
+@use "lib/viewport";
+
 html.homepage-featured-topics {
   #banner {
     margin-bottom: 1.5em;
@@ -47,7 +49,7 @@ html.homepage-featured-topics {
       justify-content: center;
 
       @media screen and (width >= 451px) {
-        margin: 0 1.25em;
+        margin: 0 0.375em;
 
         &:first-of-type:not(:last-of-type) {
           margin-left: 0;
@@ -214,6 +216,86 @@ html.homepage-featured-topics {
           flex-basis: 85%;
         }
       }
+    }
+  }
+
+  @include viewport.until(sm) {
+    &.--mobile-carousel {
+      .featured-topics {
+        gap: 0;
+        justify-content: flex-start;
+        transform: translate3d(
+          calc(
+            var(--featured-topics-carousel-offset) +
+              var(--featured-topics-carousel-drag-offset)
+          ),
+          0,
+          0
+        );
+        transition: transform 350ms cubic-bezier(0.22, 1, 0.36, 1);
+        will-change: transform;
+
+        &.is-settling,
+        .is-dragging & {
+          transition: none;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          transition: none;
+        }
+      }
+
+      .featured-topic {
+        display: flex;
+        flex: 0 0 100%;
+        width: 100%;
+        max-width: none;
+        margin: 0;
+
+        &:nth-of-type(n + 2) {
+          display: flex;
+        }
+
+        &:nth-of-type(n + 4) {
+          display: none;
+        }
+      }
+    }
+  }
+}
+
+.featured-topics-carousel {
+  &__viewport {
+    min-width: 0;
+
+    @include viewport.until(sm) {
+      .--mobile-carousel & {
+        overflow: hidden;
+
+        &:focus-visible {
+          outline: 2px solid var(--tertiary);
+          outline-offset: 2px;
+        }
+      }
+    }
+  }
+
+  &__position {
+    display: flex;
+    justify-content: center;
+    gap: 0.5em;
+    margin-block: 0.75em;
+  }
+
+  &__position-dot {
+    width: 0.5em;
+    border: 1px solid currentcolor;
+    border-radius: 50%;
+    aspect-ratio: 1;
+    color: var(--primary-medium);
+
+    &.is-active {
+      background: currentcolor;
     }
   }
 }

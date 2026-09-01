@@ -1,5 +1,7 @@
 en:
   featured_topic_title: ""
+  featured_topics_carousel_label: "Featured topics"
+  featured_topics_carousel_position: "%{current} of %{total} featured topics"
   theme_metadata:
     settings:
       number_of_topics: Display up to 5 topics at max-width
