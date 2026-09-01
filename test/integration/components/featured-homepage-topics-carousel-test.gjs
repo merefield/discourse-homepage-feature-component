@@ -1,6 +1,7 @@
 import Service from "@ember/service";
 import {
   find,
+  findAll,
   render,
   triggerEvent,
   triggerKeyEvent,
@@ -122,7 +123,7 @@ module(
         .dom(".featured-topics-carousel__position .sr-only")
         .hasText("2 of 3 featured topics", "the drag advances one topic");
       assert
-        .dom(".featured-topics-carousel__position-dot:nth-child(3)")
+        .dom(findAll(".featured-topics-carousel__position-dot")[1])
         .hasClass("is-active", "the second dot becomes active");
     });
 
