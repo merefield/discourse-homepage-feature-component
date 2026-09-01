@@ -13,6 +13,7 @@ import getURL from "discourse/lib/get-url";
 import { emojiUnescape } from "discourse/lib/text";
 import { defaultHomepage } from "discourse/lib/utilities";
 import { i18n } from "discourse-i18n";
+import FeaturedHomepageTopicsCarousel from "./featured-homepage-topics-carousel";
 
 const FEATURED_CLASS = "featured-homepage-topics";
 
@@ -97,7 +98,7 @@ export default class FeaturedHomepageTopics extends Component {
     } else if (settings.show_all_always) {
       return "-mobile-horizontal";
     } else {
-      return;
+      return "--mobile-carousel";
     }
   }
 
@@ -175,31 +176,31 @@ export default class FeaturedHomepageTopics extends Component {
                 </h2>
               {{/if}}
 
-              <div class="featured-topics">
-                {{#each this.featuredTagTopics as |t|}}
-                  <div class="featured-topic">
-                    <div
-                      class="featured-topic-image"
-                      style={{trustHTML
-                        (concat "background-image: url(" t.image_url ")")
-                      }}
-                    >
-                      {{! template-lint-disable no-invalid-link-text }}
-                      <a href={{this.topicHref t}}></a>
-                    </div>
-                    <h3>
-                      <a
-                        href={{this.topicHref t}}
-                        role="heading"
-                        aria-level="2"
-                        data-topic-id={{t.id}}
-                      >
-                        {{trustHTML (this.emojiTitle t.fancy_title)}}
-                      </a>
-                    </h3>
-                  </div>
-                {{/each}}
-              </div>
+              <FeaturedHomepageTopicsCarousel
+                @enabled={{not settings.show_all_always}}
+                @topics={{this.featuredTagTopics}}
+                as |t|
+              >
+                <div
+                  class="featured-topic-image"
+                  style={{trustHTML
+                    (concat "background-image: url(" t.image_url ")")
+                  }}
+                >
+                  {{! template-lint-disable no-invalid-link-text }}
+                  <a href={{this.topicHref t}}></a>
+                </div>
+                <h3>
+                  <a
+                    href={{this.topicHref t}}
+                    role="heading"
+                    aria-level="2"
+                    data-topic-id={{t.id}}
+                  >
+                    {{trustHTML (this.emojiTitle t.fancy_title)}}
+                  </a>
+                </h3>
+              </FeaturedHomepageTopicsCarousel>
             </div>
           </div>
         {{/if}}
