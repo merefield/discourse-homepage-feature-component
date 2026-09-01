@@ -49,7 +49,7 @@ html.homepage-featured-topics {
       justify-content: center;
 
       @media screen and (width >= 451px) {
-        margin: 0 1.25em;
+        margin: 0 0.375em;
 
         &:first-of-type:not(:last-of-type) {
           margin-left: 0;
