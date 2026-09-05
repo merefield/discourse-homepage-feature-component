@@ -12,7 +12,6 @@ import { i18n } from "discourse-i18n";
 
 const DRAG_RESISTANCE = 0.28;
 const FEATURED_IMAGE_HEIGHT_RATIO = 9 / 32;
-const FEATURED_IMAGE_MAX_WIDTH = 450;
 const FLICK_PROJECTION_SECONDS = 0.18;
 const MAX_MOBILE_TOPICS = 3;
 const MIN_FLICK_VELOCITY = 600;
@@ -25,6 +24,7 @@ export default class FeaturedHomepageTopicsCarousel extends Component {
 
   @tracked currentPosition = 0;
   @tracked dragOffset = 0;
+  @tracked imageHeight = 0;
   @tracked isSettling = false;
   @tracked slideWidth = 0;
 
@@ -88,15 +88,14 @@ export default class FeaturedHomepageTopicsCarousel extends Component {
 
     if (this.isIOSCarousel && this.slideWidth) {
       const offset = this.position * this.slideWidth * directionFactor;
-      const imageHeight =
-        Math.min(this.slideWidth, FEATURED_IMAGE_MAX_WIDTH) *
-        FEATURED_IMAGE_HEIGHT_RATIO;
 
       return trustHTML(
         `--featured-topics-carousel-offset: ${offset}px; ` +
           `--featured-topics-carousel-drag-offset: ${this.dragOffset}px; ` +
           `--featured-topics-carousel-slide-width: ${this.slideWidth}px; ` +
-          `--featured-topics-carousel-image-height: ${imageHeight}px;`
+          (this.imageHeight
+            ? `--featured-topics-carousel-image-height: ${this.imageHeight}px;`
+            : "")
       );
     }
 
@@ -109,21 +108,29 @@ export default class FeaturedHomepageTopicsCarousel extends Component {
   }
 
   @action
-  onResize([entry]) {
-    if (!this.isIOSCarousel || entry.contentRect.width <= 0) {
+  onResize(entries) {
+    const entry = entries[0];
+    if (!this.isIOSCarousel || !entry) {
       return;
     }
 
-    const width = entry.contentRect.width;
-    if (width === this.slideWidth) {
+    const { imageHeight, slideWidth } = this.#measureIOSGeometry(
+      entry.target,
+      entry.contentRect.width
+    );
+    if (
+      slideWidth <= 0 ||
+      (slideWidth === this.slideWidth && imageHeight === this.imageHeight)
+    ) {
       return;
     }
 
     this.#cancelSpring();
     this.dragOffset = 0;
+    this.imageHeight = imageHeight;
     this.isSettling = false;
-    this.slideWidth = width;
-    this.#viewportWidth = width;
+    this.slideWidth = slideWidth;
+    this.#viewportWidth = slideWidth;
   }
 
   announcePosition() {
@@ -188,8 +195,10 @@ export default class FeaturedHomepageTopicsCarousel extends Component {
     this.#pointerVelocity = 0;
     let width = event.currentTarget.clientWidth;
     if (this.isIOSCarousel) {
-      width = event.currentTarget.getBoundingClientRect().width || width;
-      this.slideWidth = width;
+      const geometry = this.#measureIOSGeometry(event.currentTarget, width);
+      width = geometry.slideWidth;
+      this.imageHeight = geometry.imageHeight;
+      this.slideWidth = geometry.slideWidth;
     }
     this.#viewportWidth = Math.max(1, width);
   }
@@ -321,12 +330,24 @@ export default class FeaturedHomepageTopicsCarousel extends Component {
     }
   }
 
+  #measureIOSGeometry(viewport, fallbackWidth) {
+    const slideWidth = viewport.getBoundingClientRect().width || fallbackWidth;
+    const imageWidth =
+      viewport.querySelector(".featured-topic-image")?.getBoundingClientRect()
+        .width || 0;
+
+    return {
+      imageHeight: imageWidth * FEATURED_IMAGE_HEIGHT_RATIO,
+      slideWidth,
+    };
+  }
+
   <template>
     <div
       class={{dConcatClass
         "featured-topics-carousel"
         (if this.isIOSCarousel "--ios")
-        (if this.slideWidth "has-slide-width")
+        (if this.imageHeight "has-image-height")
       }}
       aria-label={{if
         this.enabled

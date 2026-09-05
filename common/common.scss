@@ -278,7 +278,7 @@ html.homepage-featured-topics {
         max-width: var(--featured-topics-carousel-slide-width, 100%);
       }
 
-      &.has-slide-width .featured-topic-image {
+      &.has-image-height .featured-topic-image {
         aspect-ratio: auto;
         height: var(--featured-topics-carousel-image-height);
       }

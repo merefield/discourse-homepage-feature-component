@@ -158,6 +158,11 @@ module(
       Object.defineProperty(viewport, "getBoundingClientRect", {
         value: () => ({ width: 300 }),
       });
+      Object.defineProperty(
+        find(".featured-topic-image"),
+        "getBoundingClientRect",
+        { value: () => ({ width: 240 }) }
+      );
       stubPointerCapture(viewport);
 
       await triggerEvent(viewport, "pointerdown", {
@@ -189,8 +194,8 @@ module(
       );
       assert.strictEqual(
         track.style.getPropertyValue("--featured-topics-carousel-image-height"),
-        "84.375px",
-        "the image height keeps the 32:9 ratio"
+        "67.5px",
+        "the image height uses its rendered width for the 32:9 ratio"
       );
     });
 
