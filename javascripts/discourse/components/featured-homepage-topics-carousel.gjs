@@ -6,10 +6,13 @@ import { action } from "@ember/object";
 import { service } from "@ember/service";
 import { trustHTML } from "@ember/template";
 import dConcatClass from "discourse/ui-kit/helpers/d-concat-class";
+import dOnResize from "discourse/ui-kit/modifiers/d-on-resize";
 import dPointerDrag from "discourse/ui-kit/modifiers/d-pointer-drag";
 import { i18n } from "discourse-i18n";
 
 const DRAG_RESISTANCE = 0.28;
+const FEATURED_IMAGE_HEIGHT_RATIO = 9 / 32;
+const FEATURED_IMAGE_MAX_WIDTH = 450;
 const FLICK_PROJECTION_SECONDS = 0.18;
 const MAX_MOBILE_TOPICS = 3;
 const MIN_FLICK_VELOCITY = 600;
@@ -23,6 +26,7 @@ export default class FeaturedHomepageTopicsCarousel extends Component {
   @tracked currentPosition = 0;
   @tracked dragOffset = 0;
   @tracked isSettling = false;
+  @tracked slideWidth = 0;
 
   #animationFrame;
   #dragStartPosition = 0;
@@ -43,6 +47,10 @@ export default class FeaturedHomepageTopicsCarousel extends Component {
 
   get enabled() {
     return this.args.enabled && !this.capabilities.viewport.sm;
+  }
+
+  get isIOSCarousel() {
+    return this.enabled && this.capabilities.isIOS;
   }
 
   get mobileTopicCount() {
@@ -76,12 +84,46 @@ export default class FeaturedHomepageTopicsCarousel extends Component {
   }
 
   get trackStyle() {
-    const offset = this.position * 100 * (this.isRtl ? 1 : -1);
+    const directionFactor = this.isRtl ? 1 : -1;
+
+    if (this.isIOSCarousel && this.slideWidth) {
+      const offset = this.position * this.slideWidth * directionFactor;
+      const imageHeight =
+        Math.min(this.slideWidth, FEATURED_IMAGE_MAX_WIDTH) *
+        FEATURED_IMAGE_HEIGHT_RATIO;
+
+      return trustHTML(
+        `--featured-topics-carousel-offset: ${offset}px; ` +
+          `--featured-topics-carousel-drag-offset: ${this.dragOffset}px; ` +
+          `--featured-topics-carousel-slide-width: ${this.slideWidth}px; ` +
+          `--featured-topics-carousel-image-height: ${imageHeight}px;`
+      );
+    }
+
+    const offset = this.position * 100 * directionFactor;
 
     return trustHTML(
       `--featured-topics-carousel-offset: ${offset}%; ` +
         `--featured-topics-carousel-drag-offset: ${this.dragOffset}px;`
     );
+  }
+
+  @action
+  onResize([entry]) {
+    if (!this.isIOSCarousel || entry.contentRect.width <= 0) {
+      return;
+    }
+
+    const width = entry.contentRect.width;
+    if (width === this.slideWidth) {
+      return;
+    }
+
+    this.#cancelSpring();
+    this.dragOffset = 0;
+    this.isSettling = false;
+    this.slideWidth = width;
+    this.#viewportWidth = width;
   }
 
   announcePosition() {
@@ -144,7 +186,12 @@ export default class FeaturedHomepageTopicsCarousel extends Component {
     this.#lastPointerX = event.clientX;
     this.#lastPointerTime = event.timeStamp;
     this.#pointerVelocity = 0;
-    this.#viewportWidth = Math.max(1, event.currentTarget.clientWidth);
+    let width = event.currentTarget.clientWidth;
+    if (this.isIOSCarousel) {
+      width = event.currentTarget.getBoundingClientRect().width || width;
+      this.slideWidth = width;
+    }
+    this.#viewportWidth = Math.max(1, width);
   }
 
   @action
@@ -276,7 +323,11 @@ export default class FeaturedHomepageTopicsCarousel extends Component {
 
   <template>
     <div
-      class="featured-topics-carousel"
+      class={{dConcatClass
+        "featured-topics-carousel"
+        (if this.isIOSCarousel "--ios")
+        (if this.slideWidth "has-slide-width")
+      }}
       aria-label={{if
         this.enabled
         (i18n (themePrefix "featured_topics_carousel_label"))
@@ -286,6 +337,7 @@ export default class FeaturedHomepageTopicsCarousel extends Component {
       <div
         class="featured-topics-carousel__viewport"
         tabindex={{if this.enabled "0"}}
+        {{dOnResize this.onResize}}
         {{on "click" this.preventDraggedClick capture=true}}
         {{on "keydown" this.onKeydown}}
         {{dPointerDrag
@@ -293,6 +345,7 @@ export default class FeaturedHomepageTopicsCarousel extends Component {
           onDrag=this.onDrag
           onDragEnd=this.onDragEnd
           onDragCancel=this.onDragCancel
+          cancelCommits=this.isIOSCarousel
           draggingClass="is-dragging"
           threshold=4
           touchAction="pan-y"

@@ -265,6 +265,26 @@ html.homepage-featured-topics {
 }
 
 .featured-topics-carousel {
+  @include viewport.until(sm) {
+    &.--ios {
+      .featured-topics {
+        width: 100%;
+      }
+
+      .featured-topic {
+        flex-basis: var(--featured-topics-carousel-slide-width, 100%);
+        width: var(--featured-topics-carousel-slide-width, 100%);
+        min-width: var(--featured-topics-carousel-slide-width, 100%);
+        max-width: var(--featured-topics-carousel-slide-width, 100%);
+      }
+
+      &.has-slide-width .featured-topic-image {
+        aspect-ratio: auto;
+        height: var(--featured-topics-carousel-image-height);
+      }
+    }
+  }
+
   &__viewport {
     min-width: 0;
 
