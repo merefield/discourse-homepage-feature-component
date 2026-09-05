@@ -155,14 +155,6 @@ module(
 
       const viewport = find(".featured-topics-carousel__viewport");
       Object.defineProperty(viewport, "clientWidth", { value: 300 });
-      Object.defineProperty(viewport, "getBoundingClientRect", {
-        value: () => ({ width: 300 }),
-      });
-      Object.defineProperty(
-        find(".featured-topic-image"),
-        "getBoundingClientRect",
-        { value: () => ({ width: 240 }) }
-      );
       stubPointerCapture(viewport);
 
       await triggerEvent(viewport, "pointerdown", {
@@ -189,13 +181,8 @@ module(
       const track = find(".featured-topics");
       assert.strictEqual(
         track.style.getPropertyValue("--featured-topics-carousel-offset"),
-        "-300px",
-        "the settled slide uses the measured viewport width"
-      );
-      assert.strictEqual(
-        track.style.getPropertyValue("--featured-topics-carousel-image-height"),
-        "67.5px",
-        "the image height uses its rendered width for the 32:9 ratio"
+        "-100%",
+        "the settled slide uses one contiguous track column"
       );
     });
 

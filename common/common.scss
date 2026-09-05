@@ -268,19 +268,36 @@ html.homepage-featured-topics {
   @include viewport.until(sm) {
     &.--ios {
       .featured-topics {
+        display: grid;
+        grid-auto-columns: 100%;
+        grid-auto-flow: column;
         width: 100%;
       }
 
       .featured-topic {
-        flex-basis: var(--featured-topics-carousel-slide-width, 100%);
-        width: var(--featured-topics-carousel-slide-width, 100%);
-        min-width: var(--featured-topics-carousel-slide-width, 100%);
-        max-width: var(--featured-topics-carousel-slide-width, 100%);
-      }
+        width: 100%;
+        min-width: 0;
+        max-width: none;
 
-      &.has-image-height .featured-topic-image {
-        aspect-ratio: auto;
-        height: var(--featured-topics-carousel-image-height);
+        .featured-topic-image {
+          position: relative;
+          flex: 0 0 100%;
+          width: 100%;
+          max-width: none;
+          height: auto;
+          aspect-ratio: auto;
+
+          &::before {
+            display: block;
+            padding-block-start: 28.125%;
+            content: "";
+          }
+
+          a {
+            position: absolute;
+            inset: 0;
+          }
+        }
       }
     }
   }
