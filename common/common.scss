@@ -1,8 +1,4 @@
-@use "sass:math";
 @use "lib/viewport";
-
-$featured-image-width-ratio: 32;
-$featured-image-height-ratio: 9;
 
 html.homepage-featured-topics {
   #banner {
@@ -121,8 +117,7 @@ html.homepage-featured-topics {
       }
 
       .featured-topic-image {
-        aspect-ratio: #{$featured-image-width-ratio} /
-          #{$featured-image-height-ratio};
+        aspect-ratio: 32 / 9;
         max-width: 450px;
         width: 100%;
         background-size: cover;
@@ -286,23 +281,9 @@ html.homepage-featured-topics {
 
         .featured-topic-image {
           position: relative;
-          flex: 0 0 100%;
-          width: 100%;
           max-width: none;
-          height: auto;
-          aspect-ratio: auto;
 
-          &::before {
-            display: block;
-            padding-block-start: math.percentage(
-              math.div(
-                $featured-image-height-ratio,
-                $featured-image-width-ratio
-              )
-            );
-            content: "";
-          }
-
+          // WebKit does not resolve the empty link's percentage height here.
           a {
             position: absolute;
             inset: 0;
