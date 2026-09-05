@@ -27,6 +27,11 @@ class MobileCapabilitiesStub extends Service {
   viewport = { sm: false };
 }
 
+class IOSMobileCapabilitiesStub extends Service {
+  isIOS = true;
+  viewport = { sm: false };
+}
+
 module(
   "Integration | Component | FeaturedHomepageTopicsCarousel",
   function (hooks) {
@@ -125,6 +130,73 @@ module(
       assert
         .dom(findAll(".featured-topics-carousel__position-dot")[1])
         .hasClass("is-active", "the second dot becomes active");
+      assert
+        .dom(".featured-topics-carousel")
+        .doesNotHaveClass("--ios", "Android keeps the default carousel path");
+    });
+
+    test("iOS commits a long drag when the pointer is cancelled", async function (assert) {
+      this.owner.unregister("service:capabilities");
+      this.owner.register("service:capabilities", IOSMobileCapabilitiesStub);
+
+      await render(
+        <template>
+          <FeaturedHomepageTopicsCarousel
+            @enabled={{true}}
+            @topics={{this.topics}}
+            as |topic|
+          >
+            <div class="featured-topic-image">
+              <a href="/t/{{topic.id}}">{{topic.title}}</a>
+            </div>
+          </FeaturedHomepageTopicsCarousel>
+        </template>
+      );
+
+      const viewport = find(".featured-topics-carousel__viewport");
+      Object.defineProperty(viewport, "clientWidth", { value: 300 });
+      Object.defineProperty(viewport, "getBoundingClientRect", {
+        value: () => ({ width: 300 }),
+      });
+      Object.defineProperty(
+        find(".featured-topic-image"),
+        "getBoundingClientRect",
+        { value: () => ({ width: 240 }) }
+      );
+      stubPointerCapture(viewport);
+
+      await triggerEvent(viewport, "pointerdown", {
+        button: 0,
+        pointerId: 1,
+        clientX: 280,
+      });
+      await triggerEvent(viewport, "pointermove", {
+        pointerId: 1,
+        clientX: 20,
+      });
+      await triggerEvent(viewport, "pointercancel", {
+        pointerId: 1,
+        clientX: 20,
+      });
+
+      assert
+        .dom(".featured-topics-carousel")
+        .hasClass("--ios", "the iOS layout correction is scoped to iOS");
+      assert
+        .dom(".featured-topics-carousel__position .sr-only")
+        .hasText("2 of 3 featured topics", "the cancelled drag advances");
+
+      const track = find(".featured-topics");
+      assert.strictEqual(
+        track.style.getPropertyValue("--featured-topics-carousel-offset"),
+        "-300px",
+        "the settled slide uses the measured viewport width"
+      );
+      assert.strictEqual(
+        track.style.getPropertyValue("--featured-topics-carousel-image-height"),
+        "67.5px",
+        "the image height uses its rendered width for the 32:9 ratio"
+      );
     });
 
     test("keyboard navigation stays within the three mobile topics", async function (assert) {

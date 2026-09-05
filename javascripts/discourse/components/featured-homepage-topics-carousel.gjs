@@ -6,10 +6,12 @@ import { action } from "@ember/object";
 import { service } from "@ember/service";
 import { trustHTML } from "@ember/template";
 import dConcatClass from "discourse/ui-kit/helpers/d-concat-class";
+import dOnResize from "discourse/ui-kit/modifiers/d-on-resize";
 import dPointerDrag from "discourse/ui-kit/modifiers/d-pointer-drag";
 import { i18n } from "discourse-i18n";
 
 const DRAG_RESISTANCE = 0.28;
+const FEATURED_IMAGE_HEIGHT_RATIO = 9 / 32;
 const FLICK_PROJECTION_SECONDS = 0.18;
 const MAX_MOBILE_TOPICS = 3;
 const MIN_FLICK_VELOCITY = 600;
@@ -22,7 +24,9 @@ export default class FeaturedHomepageTopicsCarousel extends Component {
 
   @tracked currentPosition = 0;
   @tracked dragOffset = 0;
+  @tracked imageHeight = 0;
   @tracked isSettling = false;
+  @tracked slideWidth = 0;
 
   #animationFrame;
   #dragStartPosition = 0;
@@ -43,6 +47,10 @@ export default class FeaturedHomepageTopicsCarousel extends Component {
 
   get enabled() {
     return this.args.enabled && !this.capabilities.viewport.sm;
+  }
+
+  get isIOSCarousel() {
+    return this.enabled && this.capabilities.isIOS;
   }
 
   get mobileTopicCount() {
@@ -76,12 +84,53 @@ export default class FeaturedHomepageTopicsCarousel extends Component {
   }
 
   get trackStyle() {
-    const offset = this.position * 100 * (this.isRtl ? 1 : -1);
+    const directionFactor = this.isRtl ? 1 : -1;
+
+    if (this.isIOSCarousel && this.slideWidth) {
+      const offset = this.position * this.slideWidth * directionFactor;
+
+      return trustHTML(
+        `--featured-topics-carousel-offset: ${offset}px; ` +
+          `--featured-topics-carousel-drag-offset: ${this.dragOffset}px; ` +
+          `--featured-topics-carousel-slide-width: ${this.slideWidth}px; ` +
+          (this.imageHeight
+            ? `--featured-topics-carousel-image-height: ${this.imageHeight}px;`
+            : "")
+      );
+    }
+
+    const offset = this.position * 100 * directionFactor;
 
     return trustHTML(
       `--featured-topics-carousel-offset: ${offset}%; ` +
         `--featured-topics-carousel-drag-offset: ${this.dragOffset}px;`
     );
+  }
+
+  @action
+  onResize(entries) {
+    const entry = entries[0];
+    if (!this.isIOSCarousel || !entry) {
+      return;
+    }
+
+    const { imageHeight, slideWidth } = this.#measureIOSGeometry(
+      entry.target,
+      entry.contentRect.width
+    );
+    if (
+      slideWidth <= 0 ||
+      (slideWidth === this.slideWidth && imageHeight === this.imageHeight)
+    ) {
+      return;
+    }
+
+    this.#cancelSpring();
+    this.dragOffset = 0;
+    this.imageHeight = imageHeight;
+    this.isSettling = false;
+    this.slideWidth = slideWidth;
+    this.#viewportWidth = slideWidth;
   }
 
   announcePosition() {
@@ -144,7 +193,14 @@ export default class FeaturedHomepageTopicsCarousel extends Component {
     this.#lastPointerX = event.clientX;
     this.#lastPointerTime = event.timeStamp;
     this.#pointerVelocity = 0;
-    this.#viewportWidth = Math.max(1, event.currentTarget.clientWidth);
+    let width = event.currentTarget.clientWidth;
+    if (this.isIOSCarousel) {
+      const geometry = this.#measureIOSGeometry(event.currentTarget, width);
+      width = geometry.slideWidth;
+      this.imageHeight = geometry.imageHeight;
+      this.slideWidth = geometry.slideWidth;
+    }
+    this.#viewportWidth = Math.max(1, width);
   }
 
   @action
@@ -274,9 +330,25 @@ export default class FeaturedHomepageTopicsCarousel extends Component {
     }
   }
 
+  #measureIOSGeometry(viewport, fallbackWidth) {
+    const slideWidth = viewport.getBoundingClientRect().width || fallbackWidth;
+    const imageWidth =
+      viewport.querySelector(".featured-topic-image")?.getBoundingClientRect()
+        .width || 0;
+
+    return {
+      imageHeight: imageWidth * FEATURED_IMAGE_HEIGHT_RATIO,
+      slideWidth,
+    };
+  }
+
   <template>
     <div
-      class="featured-topics-carousel"
+      class={{dConcatClass
+        "featured-topics-carousel"
+        (if this.isIOSCarousel "--ios")
+        (if this.imageHeight "has-image-height")
+      }}
       aria-label={{if
         this.enabled
         (i18n (themePrefix "featured_topics_carousel_label"))
@@ -286,6 +358,7 @@ export default class FeaturedHomepageTopicsCarousel extends Component {
       <div
         class="featured-topics-carousel__viewport"
         tabindex={{if this.enabled "0"}}
+        {{dOnResize this.onResize}}
         {{on "click" this.preventDraggedClick capture=true}}
         {{on "keydown" this.onKeydown}}
         {{dPointerDrag
@@ -293,6 +366,7 @@ export default class FeaturedHomepageTopicsCarousel extends Component {
           onDrag=this.onDrag
           onDragEnd=this.onDragEnd
           onDragCancel=this.onDragCancel
+          cancelCommits=this.isIOSCarousel
           draggingClass="is-dragging"
           threshold=4
           touchAction="pan-y"
